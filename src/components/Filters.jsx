@@ -5,6 +5,7 @@ export default function Filters({
   regions,
   originalityLabels,
   categoryLabels,
+  sortLabels,
   onReset,
 }) {
   const set = (patch) => onChange({ ...filters, ...patch })
@@ -88,6 +89,20 @@ export default function Filters({
           <option value="all">All venues</option>
           <option value="curated">Curated (with pay info)</option>
           <option value="osm">Community-mapped only</option>
+        </select>
+      </label>
+
+      <label className="filters__field">
+        <span>Sort by</span>
+        <select
+          value={filters.sort}
+          onChange={(e) => set({ sort: e.target.value })}
+        >
+          {Object.entries(sortLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
         </select>
       </label>
 

@@ -9,12 +9,12 @@ function markerIcon(active, venue) {
   const isOsm = venue.source === 'osm'
   const isOpenMic = venue.categories?.includes('open-mic')
   const color = active
-    ? '#ff3d68'
+    ? '#e11d48'
     : isOpenMic
-    ? '#f5a623'
+    ? '#ea580c'
     : isOsm
-    ? '#16b3a6'
-    : '#6b3df5'
+    ? '#0d9488'
+    : '#4f46e5'
   const size = active ? 34 : 26
   return L.divIcon({
     className: 'venue-marker',
@@ -59,8 +59,10 @@ export default function MapView({ venues, selectedId, onSelect }) {
       className="leaflet-map"
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        subdomains="abcd"
+        maxZoom={20}
       />
       <FitToVenues venues={venues} selectedId={selectedId} />
       <FlyToSelected venues={venues} selectedId={selectedId} />

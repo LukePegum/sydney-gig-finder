@@ -1,4 +1,9 @@
-import { payModelLabels } from '../data/venues.js'
+import { MapPin, Mic, Banknote } from 'lucide-react'
+import {
+  payModelLabels,
+  payTierGlyph,
+  responsivenessLabels,
+} from '../data/venues.js'
 
 export default function VenueList({ venues, selectedId, onSelect }) {
   if (venues.length === 0) {
@@ -27,15 +32,30 @@ export default function VenueList({ venues, selectedId, onSelect }) {
           >
             <div className="venue-card__top">
               <h3>{v.name}</h3>
-              {v.capacity ? (
-                <span className="venue-card__cap">~{v.capacity} cap</span>
-              ) : (
-                <span className="venue-card__badge">OSM</span>
+              {!isOsm && typeof v.payTier === 'number' && (
+                <span
+                  className="venue-card__tier"
+                  title={isOpenMic ? 'No pay (open mic)' : `Pay tier: ${'$'.repeat(v.payTier)}`}
+                >
+                  {payTierGlyph(v.payTier)}
+                </span>
               )}
             </div>
             <p className="venue-card__meta">
-              {[v.suburb, v.type].filter(Boolean).join(' · ')}
+              {[
+                v.suburb,
+                v.type,
+                v.capacity ? `~${v.capacity} cap` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
             </p>
+            {!isOsm && v.responsiveness && (
+              <p className="venue-card__resp">
+                <span className={`dot dot--${v.responsiveness}`} />
+                Response: {responsivenessLabels[v.responsiveness]}
+              </p>
+            )}
             {v.genres.length > 0 && (
               <div className="venue-card__tags">
                 {v.genres.slice(0, 3).map((g) => (
@@ -47,13 +67,16 @@ export default function VenueList({ venues, selectedId, onSelect }) {
             )}
             {isOsm ? (
               <p className="venue-card__unverified">
-                📍 Community-mapped — booking & pay unverified
+                <MapPin size={14} /> Community-mapped — booking & pay unverified
               </p>
             ) : isOpenMic ? (
-              <p className="venue-card__openmic">🎤 Open mic — {v.payEstimate}</p>
+              <p className="venue-card__openmic">
+                <Mic size={14} /> Open mic — {v.payEstimate}
+              </p>
             ) : (
               <p className="venue-card__pay">
-                💰 {payModelLabels[v.payModel]} — {v.payEstimate}
+                <Banknote size={14} /> {payModelLabels[v.payModel]} —{' '}
+                {v.payEstimate}
               </p>
             )}
           </li>

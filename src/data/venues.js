@@ -8,7 +8,7 @@
 // payModel: 'door' | 'guarantee' | 'door-or-guarantee' | 'percentage' | 'unpaid-exposure'
 // originality: 'originals' | 'covers' | 'both'
 
-export const venues = [
+const rawVenues = [
   // ───────────────────────── Inner West ─────────────────────────
   {
     id: 'lansdowne',
@@ -831,6 +831,103 @@ export const venues = [
     notes: 'Inner-west pub running regular open-mic / showcase nights — confirm the current night.',
   },
 ]
+
+// Per-venue extra metadata, kept separate so the venue objects above stay
+// readable. Merged into `venues` below.
+//
+//   payTier:        0–4 ordinal for sorting (see payTierLabels). INDICATIVE.
+//   responsiveness: 'fast' | 'medium' | 'slow' — ESTIMATED from how the venue
+//                   books (direct email vs formal/ticketed process). NOT a
+//                   measured response time; treat as a rough guide only.
+//   submit:         what you typically need to send (see submitLabels).
+const venueMeta = {
+  // Inner West
+  lansdowne: { payTier: 2, responsiveness: 'medium', submit: ['form', 'epk', 'video', 'socials'] },
+  vanguard: { payTier: 2, responsiveness: 'medium', submit: ['form', 'epk', 'socials'] },
+  factory: { payTier: 3, responsiveness: 'slow', submit: ['form', 'epk', 'video', 'socials'] },
+  lazybones: { payTier: 1, responsiveness: 'fast', submit: ['form', 'epk', 'socials'] },
+  camelot: { payTier: 2, responsiveness: 'medium', submit: ['form', 'epk', 'socials'] },
+  'vic-on-the-park': { payTier: 1, responsiveness: 'fast', submit: ['epk', 'socials'] },
+  townie: { payTier: 2, responsiveness: 'fast', submit: ['epk', 'socials'] },
+  'petersham-bowlo': { payTier: 1, responsiveness: 'medium', submit: ['form', 'socials'] },
+  'bridge-rozelle': { payTier: 2, responsiveness: 'medium', submit: ['epk', 'video'] },
+  leadbelly: { payTier: 2, responsiveness: 'medium', submit: ['form', 'epk', 'video', 'socials'] },
+  'golden-barley': { payTier: 1, responsiveness: 'fast', submit: ['epk', 'socials'] },
+  'botany-view': { payTier: 1, responsiveness: 'fast', submit: ['socials'] },
+  // CBD & City East
+  oaf: { payTier: 3, responsiveness: 'slow', submit: ['form', 'epk', 'video', 'streaming', 'socials'] },
+  frankies: { payTier: 2, responsiveness: 'fast', submit: ['video', 'socials'] },
+  'marys-underground': { payTier: 3, responsiveness: 'slow', submit: ['form', 'epk', 'video', 'socials'] },
+  // Eastern Suburbs
+  'coogee-bay': { payTier: 3, responsiveness: 'medium', submit: ['form', 'epk', 'video'] },
+  'beach-road-bondi': { payTier: 2, responsiveness: 'medium', submit: ['epk', 'video', 'socials'] },
+  // Northern Beaches
+  'the-newport': { payTier: 2, responsiveness: 'medium', submit: ['epk', 'socials'] },
+  'manly-boatshed': { payTier: 2, responsiveness: 'fast', submit: ['video', 'socials'] },
+  // North Shore
+  'the-concourse': { payTier: 4, responsiveness: 'slow', submit: ['form', 'epk', 'socials'] },
+  'hornsby-rsl': { payTier: 3, responsiveness: 'medium', submit: ['epk', 'video'] },
+  // Western Sydney
+  'riverside-parramatta': { payTier: 4, responsiveness: 'slow', submit: ['form', 'epk', 'socials'] },
+  'penrith-rsl': { payTier: 3, responsiveness: 'medium', submit: ['epk', 'video'] },
+  'west-hq': { payTier: 4, responsiveness: 'slow', submit: ['form', 'epk', 'video', 'socials'] },
+  // Sutherland Shire
+  'brass-monkey': { payTier: 2, responsiveness: 'medium', submit: ['form', 'epk', 'socials'] },
+  // South West
+  'campbelltown-catholic-club': { payTier: 3, responsiveness: 'medium', submit: ['epk', 'video'] },
+}
+
+// Open-mic venues all share the same metadata: no pay, fast "response" (you
+// just turn up — no waiting on a booker), and nothing to submit.
+const OPEN_MIC_META = {
+  payTier: 0,
+  responsiveness: 'fast',
+  submit: ['none'],
+}
+
+export const venues = rawVenues.map((v) => {
+  const meta = v.categories?.includes('open-mic')
+    ? OPEN_MIC_META
+    : venueMeta[v.id] || {}
+  return { ...v, ...meta }
+})
+
+export const payTierLabels = {
+  0: 'No pay',
+  1: 'Low ($)',
+  2: 'Moderate ($$)',
+  3: 'Good ($$$)',
+  4: 'Top ($$$$)',
+}
+
+// Short $ glyph used on cards. Tier 0 (no pay) shows a mic instead.
+export function payTierGlyph(tier) {
+  if (tier == null) return '?'
+  if (tier === 0) return '🎤'
+  return '$'.repeat(tier)
+}
+
+export const responsivenessLabels = {
+  fast: 'Usually quick',
+  medium: 'Moderate',
+  slow: 'Can be slow / formal',
+}
+
+export const submitLabels = {
+  form: 'Booking form',
+  epk: 'EPK / press kit',
+  video: 'Live video',
+  socials: 'Socials',
+  streaming: 'Streaming links',
+  none: 'No application — just turn up & sign up',
+}
+
+export const sortLabels = {
+  default: 'Default',
+  'pay-desc': 'Pay: high → low',
+  'pay-asc': 'Pay: low → high',
+  response: 'Quickest response',
+}
 
 // A venue can belong to several categories. Default: curated venues are paid
 // gigs unless tagged otherwise; OSM venues are "advertised live music".
