@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Music, Map as MapIcon, BarChart3 } from 'lucide-react'
+import { Music, Map as MapIcon, BarChart3, Guitar, Ticket } from 'lucide-react'
 import {
   venues as curatedVenues,
   allGenres,
@@ -9,12 +9,16 @@ import {
   sortLabels,
   venueCategories,
 } from './data/venues.js'
+import { getUpcomingGigs, allGigGenres } from './data/gigs.js'
 import { fetchOsmVenues } from './data/fetchOsmVenues.js'
 import MapView from './components/MapView.jsx'
 import StatsView from './components/StatsView.jsx'
 import Filters from './components/Filters.jsx'
 import VenueList from './components/VenueList.jsx'
 import VenueDetail from './components/VenueDetail.jsx'
+import AttendFilters from './components/AttendFilters.jsx'
+import GigList from './components/GigList.jsx'
+import GigDetail from './components/GigDetail.jsx'
 
 const emptyFilters = {
   search: '',
@@ -26,11 +30,22 @@ const emptyFilters = {
   sort: 'default', // 'default' | 'pay-desc' | 'pay-asc' | 'response'
 }
 
+const emptyGigFilters = {
+  search: '',
+  region: 'all',
+  genre: 'all',
+  sort: 'date', // 'date' | 'price-asc' | 'price-desc'
+  freeOnly: false,
+}
+
 const RESPONSE_RANK = { fast: 0, medium: 1, slow: 2 }
 
 export default function App() {
+  const [mode, setMode] = useState('perform') // 'perform' | 'attend'
   const [filters, setFilters] = useState(emptyFilters)
+  const [gigFilters, setGigFilters] = useState(emptyGigFilters)
   const [selectedId, setSelectedId] = useState(null)
+  const [selectedGigId, setSelectedGigId] = useState(null)
   const [view, setView] = useState('map') // 'map' | 'stats'
   const [osmVenues, setOsmVenues] = useState([])
   const [osmStatus, setOsmStatus] = useState('loading') // loading | done | error
@@ -57,6 +72,7 @@ export default function App() {
     [osmVenues]
   )
 
+  // ───────── Perform mode: venue filtering + sorting ─────────
   const filtered = useMemo(() => {
     const list = allVenues.filter((v) => {
       const q = filters.search.trim().toLowerCase()
@@ -91,7 +107,6 @@ export default function App() {
       )
     })
 
-    // Sorting. Venues with no data (e.g. OSM) sink to the bottom.
     const payOf = (v) => (typeof v.payTier === 'number' ? v.payTier : -1)
     const respOf = (v) =>
       v.responsiveness != null ? RESPONSE_RANK[v.responsiveness] : 99
@@ -99,7 +114,6 @@ export default function App() {
     if (filters.sort === 'pay-desc') {
       sorted.sort((a, b) => payOf(b) - payOf(a))
     } else if (filters.sort === 'pay-asc') {
-      // Keep unknown-pay venues at the bottom even when ascending.
       sorted.sort((a, b) => {
         const pa = payOf(a) < 0 ? Infinity : payOf(a)
         const pb = payOf(b) < 0 ? Infinity : payOf(b)
@@ -112,7 +126,67 @@ export default function App() {
   }, [filters, allVenues])
 
   const selected = allVenues.find((v) => v.id === selectedId) || null
-  const curatedCount = curatedVenues.length
+
+  // ───────── Attend mode: upcoming gigs filtering + sorting ─────────
+  const upcomingGigs = useMemo(() => getUpcomingGigs(curatedVenues), [])
+
+  const filteredGigs = useMemo(() => {
+    const q = gigFilters.search.trim().toLowerCase()
+    const list = upcomingGigs.filter((g) => {
+      const matchesSearch =
+        !q ||
+        g.artist.toLowerCase().includes(q) ||
+        g.venueName.toLowerCase().includes(q) ||
+        g.suburb.toLowerCase().includes(q)
+      const matchesRegion =
+        gigFilters.region === 'all' || g.region === gigFilters.region
+      const matchesGenre =
+        gigFilters.genre === 'all' || g.genre === gigFilters.genre
+      const matchesFree = !gigFilters.freeOnly || g.price === 0
+      return matchesSearch && matchesRegion && matchesGenre && matchesFree
+    })
+    const sorted = [...list]
+    if (gigFilters.sort === 'price-asc') {
+      sorted.sort((a, b) => a.price - b.price || a.start - b.start)
+    } else if (gigFilters.sort === 'price-desc') {
+      sorted.sort((a, b) => b.price - a.price || a.start - b.start)
+    } else {
+      sorted.sort((a, b) => a.start - b.start)
+    }
+    return sorted
+  }, [gigFilters, upcomingGigs])
+
+  // One map marker per venue that has upcoming gigs.
+  const gigVenues = useMemo(() => {
+    const m = new Map()
+    for (const g of filteredGigs) {
+      if (!m.has(g.venueId)) {
+        m.set(g.venueId, {
+          id: g.venueId,
+          name: g.venueName,
+          suburb: g.suburb,
+          lat: g.lat,
+          lng: g.lng,
+          genres: [],
+          count: 0,
+        })
+      }
+      m.get(g.venueId).count++
+    }
+    return [...m.values()].map((v) => ({
+      ...v,
+      type: `${v.count} upcoming gig${v.count > 1 ? 's' : ''}`,
+    }))
+  }, [filteredGigs])
+
+  const selectedGig = filteredGigs.find((g) => g.id === selectedGigId) || null
+
+  const handleGigVenueSelect = (venueId) => {
+    const g = filteredGigs.find((x) => x.venueId === venueId)
+    if (g) setSelectedGigId(g.id)
+  }
+
+  const isAttend = mode === 'attend'
 
   return (
     <div className="app">
@@ -124,49 +198,98 @@ export default function App() {
           <div>
             <h1>Sydney Gig Finder</h1>
             <p>
-              Live-music venues you can apply to play — requirements, booking
-              contacts and indicative pay.
+              {isAttend
+                ? 'Upcoming live gigs around Sydney — dates, times and ticket prices.'
+                : 'Live-music venues you can apply to play — requirements, booking contacts and indicative pay.'}
             </p>
           </div>
         </div>
+
         <div className="app-header__right">
-          <div className="view-toggle" role="tablist" aria-label="View">
+          <div className="mode-toggle" role="tablist" aria-label="Mode">
             <button
-              className={view === 'map' ? 'is-active' : ''}
-              onClick={() => setView('map')}
+              className={!isAttend ? 'is-active' : ''}
+              onClick={() => setMode('perform')}
             >
-              <MapIcon size={15} /> Map
+              <Guitar size={15} /> Perform
             </button>
             <button
-              className={view === 'stats' ? 'is-active' : ''}
-              onClick={() => setView('stats')}
+              className={isAttend ? 'is-active' : ''}
+              onClick={() => setMode('attend')}
             >
-              <BarChart3 size={15} /> Insights
+              <Ticket size={15} /> Attend
             </button>
           </div>
+
+          {!isAttend && (
+            <div className="view-toggle" role="tablist" aria-label="View">
+              <button
+                className={view === 'map' ? 'is-active' : ''}
+                onClick={() => setView('map')}
+              >
+                <MapIcon size={15} /> Map
+              </button>
+              <button
+                className={view === 'stats' ? 'is-active' : ''}
+                onClick={() => setView('stats')}
+              >
+                <BarChart3 size={15} /> Insights
+              </button>
+            </div>
+          )}
+
           <div className="app-header__count">
-            {filtered.length} shown · {curatedCount} curated
-            {osmStatus === 'done' && ` + ${osmVenues.length} community-mapped`}
-            {osmStatus === 'loading' && ' · loading map data…'}
-            {osmStatus === 'error' && ' · (OSM venues unavailable)'}
+            {isAttend ? (
+              `${filteredGigs.length} upcoming gig${
+                filteredGigs.length === 1 ? '' : 's'
+              }`
+            ) : (
+              <>
+                {filtered.length} shown · {curatedVenues.length} curated
+                {osmStatus === 'done' &&
+                  ` + ${osmVenues.length} community-mapped`}
+                {osmStatus === 'loading' && ' · loading map data…'}
+                {osmStatus === 'error' && ' · (OSM venues unavailable)'}
+              </>
+            )}
           </div>
         </div>
       </header>
 
-      <Filters
-        filters={filters}
-        onChange={setFilters}
-        genres={allGenres}
-        regions={allRegions}
-        originalityLabels={originalityLabels}
-        categoryLabels={categoryLabels}
-        sortLabels={sortLabels}
-        onReset={() => setFilters(emptyFilters)}
-      />
+      {isAttend ? (
+        <AttendFilters
+          filters={gigFilters}
+          onChange={setGigFilters}
+          genres={allGigGenres}
+          regions={allRegions}
+          onReset={() => setGigFilters(emptyGigFilters)}
+        />
+      ) : (
+        <Filters
+          filters={filters}
+          onChange={setFilters}
+          genres={allGenres}
+          regions={allRegions}
+          originalityLabels={originalityLabels}
+          categoryLabels={categoryLabels}
+          sortLabels={sortLabels}
+          onReset={() => setFilters(emptyFilters)}
+        />
+      )}
 
       <main className="app-body">
         <aside className="sidebar">
-          {selected ? (
+          {isAttend ? (
+            selectedGig ? (
+              <GigDetail gig={selectedGig} onBack={() => setSelectedGigId(null)} />
+            ) : (
+              <GigList
+                gigs={filteredGigs}
+                selectedId={selectedGigId}
+                onSelect={setSelectedGigId}
+              />
+            )
+          ) : selected ? (
             <VenueDetail venue={selected} onBack={() => setSelectedId(null)} />
           ) : (
             <VenueList
@@ -178,7 +301,13 @@ export default function App() {
         </aside>
 
         <section className="map-pane">
-          {view === 'map' ? (
+          {isAttend ? (
+            <MapView
+              venues={gigVenues}
+              selectedId={selectedGig?.venueId || null}
+              onSelect={handleGigVenueSelect}
+            />
+          ) : view === 'map' ? (
             <MapView
               venues={filtered}
               selectedId={selectedId}
@@ -191,9 +320,20 @@ export default function App() {
       </main>
 
       <footer className="app-footer">
-        Curated venues show <strong>indicative</strong> pay &amp; requirements —
-        always confirm with the booker. Community-mapped (OpenStreetMap) venues
-        are location-only and <strong>unverified</strong>.
+        {isAttend ? (
+          <>
+            Gig listings shown here are <strong>sample data</strong> for
+            demonstration — not real events. Always confirm dates, times and
+            ticket prices on the venue's own what's-on page.
+          </>
+        ) : (
+          <>
+            Curated venues show <strong>indicative</strong> pay &amp;
+            requirements — always confirm with the booker. Community-mapped
+            (OpenStreetMap) venues are location-only and{' '}
+            <strong>unverified</strong>.
+          </>
+        )}
       </footer>
     </div>
   )

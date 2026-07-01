@@ -108,6 +108,35 @@ h3 {
   white-space: nowrap;
 }
 
+/* Mode toggle (Perform / Attend) — the primary switch */
+.mode-toggle {
+  display: flex;
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+.mode-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.75);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mode-toggle button.is-active {
+  background: #fff;
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
 /* Segmented view toggle */
 .view-toggle {
   display: flex;
@@ -316,6 +345,154 @@ h3 {
 }
 .venue-card__openmic {
   color: var(--orange);
+}
+
+/* Free-only checkbox in the filter bar */
+.filters__check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.85rem;
+  color: var(--text);
+  cursor: pointer;
+  padding-bottom: 9px;
+}
+.filters__check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* ───────────── Gig list (Attend mode) ───────────── */
+.gig-list {
+  list-style: none;
+  margin: 0;
+  padding: 12px;
+}
+.gig-card {
+  display: flex;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.gig-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.gig-card--active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-weak), var(--shadow-md);
+}
+.gig-card__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  padding: 8px 6px;
+  background: var(--accent-weak);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  line-height: 1.1;
+}
+.gig-card__weekday {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+.gig-card__day {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.gig-card__month {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.gig-card__body {
+  min-width: 0;
+  flex: 1;
+}
+.gig-card__body h3 {
+  margin: 0 0 3px;
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+.gig-card__venue {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.gig-card__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gig-card__time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.gig-card__price {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--amber);
+  margin-left: auto;
+}
+.gig-card__price.is-free {
+  color: #16a34a;
+}
+
+/* Gig detail facts row */
+.gig-detail__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.gig-fact {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 13px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+}
+.gig-fact svg {
+  color: var(--accent);
+}
+.gig-fact--price {
+  color: var(--amber);
+}
+.gig-fact--price svg {
+  color: var(--amber);
+}
+.gig-fact--price.is-free,
+.gig-fact--price.is-free svg {
+  color: #16a34a;
 }
 
 /* Tags / chips */
