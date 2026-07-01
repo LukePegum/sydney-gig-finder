@@ -70,6 +70,70 @@ export function getUpcomingGigs(venues, fromDate = new Date()) {
 
 export const allGigGenres = Array.from(new Set(gigs.map((g) => g.genre))).sort()
 
+export const attendKindLabels = {
+  gig: 'Ticketed gigs',
+  'open-mic': 'Open mic (free / amateur)',
+  venue: 'Venues to explore',
+}
+
+// Build the full list of things a gig-goer can attend, combining:
+//  - 'gig'      dated ticketed shows (from the sample gigs above)
+//  - 'open-mic' free amateur / open-mic nights (from open-mic venues)
+//  - 'venue'    rooms with regular live music but no specific listing yet
+// Every item carries the venue's website for a direct link.
+export function getAttendItems(venues, fromDate = new Date()) {
+  const gigItems = getUpcomingGigs(venues, fromDate).map((g) => ({
+    ...g,
+    kind: 'gig',
+    title: g.artist,
+  }))
+
+  const openMic = venues
+    .filter((v) => v.categories?.includes('open-mic'))
+    .map((v) => ({
+      id: 'om-' + v.id,
+      kind: 'open-mic',
+      title: 'Open Mic Night',
+      artist: 'Open Mic Night',
+      venueId: v.id,
+      venueName: v.name,
+      suburb: v.suburb,
+      region: v.region,
+      type: v.type,
+      lat: v.lat,
+      lng: v.lng,
+      website: v.website,
+      genre: 'Open mic',
+      price: 0,
+      start: null,
+    }))
+
+  // Venues already represented by a dated gig or an open-mic night.
+  const covered = new Set([...gigItems, ...openMic].map((i) => i.venueId))
+
+  const regular = venues
+    .filter((v) => !v.source && !v.categories && !covered.has(v.id))
+    .map((v) => ({
+      id: 'reg-' + v.id,
+      kind: 'venue',
+      title: v.name,
+      artist: v.name,
+      venueId: v.id,
+      venueName: v.name,
+      suburb: v.suburb,
+      region: v.region,
+      type: v.type,
+      lat: v.lat,
+      lng: v.lng,
+      website: v.website,
+      genre: v.genres?.[0] || 'Live music',
+      price: null,
+      start: null,
+    }))
+
+  return [...gigItems, ...openMic, ...regular]
+}
+
 // Nicely formatted date/time, e.g. "Fri 3 Jul · 8:00 PM".
 export function formatGigDate(start) {
   const d = start.toLocaleDateString('en-AU', {

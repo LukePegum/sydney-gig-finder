@@ -419,6 +419,35 @@ h3 {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+/* Non-dated badges (open mic / regular venue) */
+.gig-card__date--openmic {
+  background: rgba(234, 88, 12, 0.1);
+  color: var(--orange);
+  gap: 4px;
+}
+.gig-card__date--venue {
+  background: var(--surface-2);
+  color: var(--muted);
+  gap: 4px;
+}
+.gig-card__badge-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  text-align: center;
+}
+.gig-card__web {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  padding: 2px;
+  border-radius: 6px;
+}
+.gig-card__web:hover {
+  color: var(--accent);
+  background: var(--accent-weak);
+}
 .gig-card__body {
   min-width: 0;
   flex: 1;
@@ -449,6 +478,12 @@ h3 {
   font-size: 0.78rem;
   color: var(--muted);
 }
+.gig-card__right {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 .gig-card__price {
   display: inline-flex;
   align-items: center;
@@ -456,7 +491,6 @@ h3 {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--amber);
-  margin-left: auto;
 }
 .gig-card__price.is-free {
   color: #16a34a;

@@ -3,6 +3,7 @@ export default function AttendFilters({
   onChange,
   genres,
   regions,
+  kindLabels,
   onReset,
 }) {
   const set = (patch) => onChange({ ...filters, ...patch })
@@ -16,6 +17,21 @@ export default function AttendFilters({
         value={filters.search}
         onChange={(e) => set({ search: e.target.value })}
       />
+
+      <label className="filters__field">
+        <span>Type</span>
+        <select
+          value={filters.kind}
+          onChange={(e) => set({ kind: e.target.value })}
+        >
+          <option value="all">Everything</option>
+          {Object.entries(kindLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <label className="filters__field">
         <span>Region</span>

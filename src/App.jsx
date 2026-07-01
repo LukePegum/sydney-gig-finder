@@ -9,7 +9,7 @@ import {
   sortLabels,
   venueCategories,
 } from './data/venues.js'
-import { getUpcomingGigs, allGigGenres } from './data/gigs.js'
+import { getAttendItems, attendKindLabels } from './data/gigs.js'
 import { fetchOsmVenues } from './data/fetchOsmVenues.js'
 import MapView from './components/MapView.jsx'
 import StatsView from './components/StatsView.jsx'
@@ -34,9 +34,12 @@ const emptyGigFilters = {
   search: '',
   region: 'all',
   genre: 'all',
+  kind: 'all', // 'all' | 'gig' | 'open-mic' | 'venue'
   sort: 'date', // 'date' | 'price-asc' | 'price-desc'
   freeOnly: false,
 }
+
+const KIND_RANK = { gig: 0, 'open-mic': 1, venue: 2 }
 
 const RESPONSE_RANK = { fast: 0, medium: 1, slow: 2 }
 
@@ -127,34 +130,62 @@ export default function App() {
 
   const selected = allVenues.find((v) => v.id === selectedId) || null
 
-  // ───────── Attend mode: upcoming gigs filtering + sorting ─────────
-  const upcomingGigs = useMemo(() => getUpcomingGigs(curatedVenues), [])
+  // ───────── Attend mode: gigs, open-mic nights & venues to explore ─────────
+  const attendItems = useMemo(() => getAttendItems(curatedVenues), [])
+
+  const attendGenres = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          attendItems
+            .map((i) => i.genre)
+            .filter((g) => g && g !== 'Open mic' && g !== 'Live music')
+        )
+      ).sort(),
+    [attendItems]
+  )
 
   const filteredGigs = useMemo(() => {
     const q = gigFilters.search.trim().toLowerCase()
-    const list = upcomingGigs.filter((g) => {
+    const list = attendItems.filter((i) => {
       const matchesSearch =
         !q ||
-        g.artist.toLowerCase().includes(q) ||
-        g.venueName.toLowerCase().includes(q) ||
-        g.suburb.toLowerCase().includes(q)
+        i.title.toLowerCase().includes(q) ||
+        i.venueName.toLowerCase().includes(q) ||
+        i.suburb.toLowerCase().includes(q)
       const matchesRegion =
-        gigFilters.region === 'all' || g.region === gigFilters.region
+        gigFilters.region === 'all' || i.region === gigFilters.region
       const matchesGenre =
-        gigFilters.genre === 'all' || g.genre === gigFilters.genre
-      const matchesFree = !gigFilters.freeOnly || g.price === 0
-      return matchesSearch && matchesRegion && matchesGenre && matchesFree
+        gigFilters.genre === 'all' || i.genre === gigFilters.genre
+      const matchesKind =
+        gigFilters.kind === 'all' || i.kind === gigFilters.kind
+      const matchesFree = !gigFilters.freeOnly || i.price === 0
+      return (
+        matchesSearch &&
+        matchesRegion &&
+        matchesGenre &&
+        matchesKind &&
+        matchesFree
+      )
     })
+
+    const timeOf = (i) => (i.start ? i.start.getTime() : Infinity)
     const sorted = [...list]
     if (gigFilters.sort === 'price-asc') {
-      sorted.sort((a, b) => a.price - b.price || a.start - b.start)
+      const p = (i) => (i.price == null ? Infinity : i.price)
+      sorted.sort((a, b) => p(a) - p(b) || timeOf(a) - timeOf(b))
     } else if (gigFilters.sort === 'price-desc') {
-      sorted.sort((a, b) => b.price - a.price || a.start - b.start)
+      const p = (i) => (i.price == null ? -Infinity : i.price)
+      sorted.sort((a, b) => p(b) - p(a) || timeOf(a) - timeOf(b))
     } else {
-      sorted.sort((a, b) => a.start - b.start)
+      // Date: dated gigs first (soonest), then open-mic, then venues.
+      sorted.sort(
+        (a, b) =>
+          timeOf(a) - timeOf(b) || KIND_RANK[a.kind] - KIND_RANK[b.kind]
+      )
     }
     return sorted
-  }, [gigFilters, upcomingGigs])
+  }, [gigFilters, attendItems])
 
   // One map marker per venue that has upcoming gigs.
   const gigVenues = useMemo(() => {
@@ -199,7 +230,7 @@ export default function App() {
             <h1>Sydney Gig Finder</h1>
             <p>
               {isAttend
-                ? 'Upcoming live gigs around Sydney — dates, times and ticket prices.'
+                ? 'Live gigs, free open-mic nights and venues to explore around Sydney — dates, times and ticket prices.'
                 : 'Live-music venues you can apply to play — requirements, booking contacts and indicative pay.'}
             </p>
           </div>
@@ -240,9 +271,9 @@ export default function App() {
 
           <div className="app-header__count">
             {isAttend ? (
-              `${filteredGigs.length} upcoming gig${
+              `${filteredGigs.length} gig${
                 filteredGigs.length === 1 ? '' : 's'
-              }`
+              } & venues to explore`
             ) : (
               <>
                 {filtered.length} shown · {curatedVenues.length} curated
@@ -260,8 +291,9 @@ export default function App() {
         <AttendFilters
           filters={gigFilters}
           onChange={setGigFilters}
-          genres={allGigGenres}
+          genres={attendGenres}
           regions={allRegions}
+          kindLabels={attendKindLabels}
           onReset={() => setGigFilters(emptyGigFilters)}
         />
       ) : (
